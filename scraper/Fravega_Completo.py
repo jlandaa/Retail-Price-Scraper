@@ -1,17 +1,12 @@
-import cloudscraper
+import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import time
 import random
 import re
-import os
-import glob
-from datetime import datetime, timedelta
+
 # ==========================================
 # 1. LISTA DE CATEGORÍAS
-# ==========================================
-# ==========================================
-# 1. LISTA DE CATEGORÍAS (OPTIMIZADA PARA BI)
 # ==========================================
 categorias_estrategicas = [
     # --- TECNOLOGÍA ---
@@ -53,45 +48,15 @@ marcas_conocidas = [
     'GAMA', 'REMINGTON', 'CHICCO', 'KIDDY', 'MACLAREN'
 ]
 
-def aplicar_politica_retencion(carpeta='data', dias_retencion=30):
-    print(f"\n🧹 Iniciando política de retención: eliminando CSVs mayores a {dias_retencion} días...")
-    if not os.path.exists(carpeta):
-        return
-
-    # Calculamos cuál es la fecha límite (hace 30 días)
-    fecha_limite = datetime.now() - timedelta(days=dias_retencion)
-    archivos_csv = glob.glob(f"{carpeta}/fravega_*.csv")
-    
-    eliminados = 0
-    for archivo in archivos_csv:
-        try:
-            # Extraemos la fecha del nombre del archivo (ej: data/fravega_2026-03-17.csv -> 2026-03-17)
-            nombre_base = os.path.basename(archivo)
-            fecha_str = nombre_base.replace('fravega_', '').replace('.csv', '')
-            fecha_archivo = datetime.strptime(fecha_str, '%Y-%m-%d')
-            
-            # Si el archivo es más viejo que la fecha límite, lo borramos
-            if fecha_archivo < fecha_limite:
-                os.remove(archivo)
-                eliminados += 1
-                print(f"   🗑️ Eliminado por antigüedad: {nombre_base}")
-        except Exception as e:
-            print(f"   ⚠️ Saltando archivo {archivo} (Formato no reconocido).")
-            
-    if eliminados == 0:
-        print("   ✨ No hay archivos antiguos para eliminar hoy.")
-    else:
-        print(f"   ✅ Limpieza exitosa: {eliminados} archivos eliminados.")
-
 def extraer_fravega_robusto(max_paginas=5):
-    datos_totales = []
-    # 🚀Creamos un scraper que simula ser Chrome en Windows
-    scraper = cloudscraper.create_scraper(browser={
-        'browser': 'chrome',
-        'platform': 'windows',
-        'desktop': True
-    })
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "es-AR,es;q=0.9"
+    }
     
+    datos_totales = []
+    session = requests.Session()
 
     for cat in categorias_estrategicas:
         url_base = cat["url"]
@@ -109,7 +74,7 @@ def extraer_fravega_robusto(max_paginas=5):
             for intento in range(max_reintentos):
                 try:
                     time.sleep(random.uniform(2, 5))
-                    response = scraper.get(url, timeout=20)
+                    response = session.get(url, headers=headers, timeout=15)
                     
                     if response.status_code == 200:
                         exito_conexion = True
@@ -118,7 +83,7 @@ def extraer_fravega_robusto(max_paginas=5):
                         print(f"  ⚠️ Status {response.status_code} (Intento {intento + 1}/{max_reintentos}). Reintentando en 3s...")
                         time.sleep(3)
                         
-                except Exception as e:
+                except requests.exceptions.RequestException as e:
                     # Atrapamos micro-cortes, timeouts y "Response ended prematurely"
                     print(f"  🔄 Micro-corte detectado (Intento {intento + 1}/{max_reintentos}). Esperando 5s para reintentar...")
                     time.sleep(5) 
@@ -236,21 +201,9 @@ def extraer_fravega_robusto(max_paginas=5):
 
     if datos_totales:
         df = pd.DataFrame(datos_totales)
-        
-        # --- LÓGICA DE DATA LAKE ---
-        carpeta_destino = 'data'
-        os.makedirs(carpeta_destino, exist_ok=True)
-        
-        # Guardamos con formato estricto YYYY-MM-DD para que la limpieza funcione
-        fecha_hoy = datetime.now().strftime('%Y-%m-%d')
-        nombre_archivo = f"{carpeta_destino}/fravega_{fecha_hoy}.csv"
-        
+        nombre_archivo = f"catalogo_fravega_{time.strftime('%Y%m%d')}.csv"
         df.to_csv(nombre_archivo, index=False, encoding='utf-8-sig')
-        print(f"\n🏆 ¡EXTRACCIÓN EXITOSA! Se guardaron {len(datos_totales)} productos en: {nombre_archivo}")
-        
-        # --- EJECUTAMOS LA LIMPIEZA ---
-        aplicar_politica_retencion(carpeta=carpeta_destino, dias_retencion=30)
-        
+        print(f"\n🏆 ¡EXTRACCIÓN EXITOSA! Se guardaron {len(datos_totales)} productos en el CSV.")
     else:
         print("\n❌ No se obtuvieron datos.")
 
