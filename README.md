@@ -46,17 +46,17 @@ El pipeline de datos está construido en tres fases principales:
 
 ## 1. 🚀 Cómo ejecutar este proyecto localmente
 Clonar el repositorio:
-´´´bash
+```bash
 git clone [https://github.com/tu-usuario/retail-pricing-pipeline.git](https://github.com/tu-usuario/retail-pricing-pipeline.git)
-´´´
+```
 ## 2. Instalar dependencias de Python:
-´´´bash
+```bash
 pip install -r requirements.txt
-´´´
+```
 ## 3. Ejecutar el scraper:
-´´´bash
+```bash
 python scraper/main.py
-´´´
+```
 ## 4. Subir los datos resultantes a Databricks y ejecutar el notebook ETL_Retail.html.
 
 
