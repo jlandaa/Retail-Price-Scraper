@@ -16,24 +16,18 @@ En la industria del retail, la agilidad para ajustar precios frente a la compete
 * **Monitorear el posicionamiento de marcas** (ej. Samsung, Motorola, LG) frente a rebajas de competidores.
 * **Detectar oportunidades de margen** mediante el análisis de dispersión entre el precio regular y el precio de oferta.
 
-## 🏗️ Arquitectura de la Solución (ETL)
+## 🏗️ Arquitectura del Pipeline
+El flujo de datos sigue las mejores prácticas de Data Engineering, dividiéndose en cuatro etapas clave:
+1. **Extracción (Ingesta):** Scripts de Python utilizando ScraperAPI, implementando manejo de excepciones, sistema de reintentos (retries) y paginación para garantizar la robustez de la captura diaria.
+2. **Procesamiento (ETL):** Databricks y PySpark se encargan de la limpieza de strings, casteo estricto de tipos de datos y aplicación de lógica de negocio.
+3. **Almacenamiento (Data Warehouse):** Modelado de datos optimizado bajo un **Esquema Estrella**, generando Claves Subrogadas numéricas (Surrogate Keys) y guardando la información en formato Delta.
+4. **Visualización (BI):** Power BI conectado al modelo para análisis interactivo, diseño UX/UI y reportes de nivel ejecutivo.
 
-El pipeline de datos está construido en tres fases principales:
-
-### 1. Extracción (Web Scraping con Python)
-* Script desarrollado en **Python** para navegar y parsear el sitio web de **Frávega**.
-* Extracción diaria de su catálogo de productos, capturando variables clave: SKU original, Marca, Categoría, Precio Regular, Precio de Oferta y URL del producto.
-* Manejo de la estructura HTML específica del sitio, resolviendo la paginación y realizando la limpieza inicial de strings para los nombres de los productos.
-
-### 2. Transformación (Databricks & SQL)
-* Ingesta de los datos crudos en el entorno de **Databricks**.
-* Procesamiento y transformación utilizando **SQL** y **PySpark** para generar el modelo dimensional.
-* Creación de la tabla de hechos (`fact_precios_diarios`) y dimensiones (`dim_producto`), asegurando la integridad referencial y calculando métricas derivadas (ej. `% de Descuento`).
-
-### 3. Visualización (Microsoft Power BI)
-* Conexión directa al modelo semántico limpio.
-* Diseño de un reporte de nivel ejecutivo aplicando mejores prácticas de **Data Storytelling** y UX.
-* Medidas DAX optimizadas para el cálculo de promedios de venta y volumen de artículos relevados.
+## ⚙️ Características Técnicas Destacadas
+* **Performance Optimizada:** Implementación de un modelo de datos en estrella (Star Schema) en Databricks, reemplazando cadenas de texto largas por identificadores numéricos únicos (`id_producto`) para cruzar hechos y dimensiones con máxima velocidad.
+* **Código Limpio y Modular:** Lógica de extracción separada por categorías estratégicas y diccionarios de marcas.
+* **Data Storytelling:** Diseño de dashboard en Power BI optimizado para lectura rápida de KPIs, análisis de dispersión de precios y detección de outliers.
+* **Manejo de Historial:** Política de retención de datos y partición de tablas temporales para análisis evolutivo.
 
 ## 📂 Estructura del Repositorio
 ```text
@@ -57,7 +51,8 @@ pip install -r requirements.txt
 ```bash
 python scraper/Fravega_Completo.py
 ```
-## 4. Subir los datos resultantes a Databricks y ejecutar el notebook
+## 4. Procesar en la nube:
+Subir los datos resultantes a Databricks y ejecutar el notebook
 ```text
 notebooks/Scraping_Retail.ipynb
 ```
