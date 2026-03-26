@@ -47,7 +47,7 @@ El pipeline de datos está construido en tres fases principales:
 ## 1. 🚀 Cómo ejecutar este proyecto localmente
 Clonar el repositorio:
 ```bash
-git clone [https://github.com/tu-usuario/retail-pricing-pipeline.git](https://github.com/tu-usuario/retail-pricing-pipeline.git)
+git clone https://github.com/jlandaa/Analisis-Precios-Fravega.git
 ```
 ## 2. Instalar dependencias de Python:
 ```bash
