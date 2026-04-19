@@ -1,4 +1,6 @@
 # 📊 Retail Competitiveness & Pricing Strategy: End-to-End Data Pipeline
+![Status: Maintained](https://img.shields.io/badge/Status-Maintained-brightgreen?style=for-the-badge)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 
 [![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)]()
 [![Databricks](https://img.shields.io/badge/Databricks-FF3621?style=for-the-badge&logo=databricks&logoColor=white)]()
