@@ -1,4 +1,4 @@
-name: Scraper Diario Frávega
+name: ETL Frávega (Bi-Weekly)
 
 on:
   schedule:
