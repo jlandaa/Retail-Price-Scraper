@@ -38,11 +38,7 @@ jobs:
         git commit -m "🤖 Actualización bi-semanal de precios y limpieza" || echo "No hay cambios para subir"
         git push
 
-    # ⬇️ PASO 1: Instalar la CLI de Databricks
-    - name: Instalar Databricks CLI
-      uses: databricks/setup-databricks@main
-
-    # ⬇️ PASO 2: Subir el CSV dinámico al Volumen de Databricks vía API
+    # ⬇️ SUBIR CSV DIRECTAMENTE VÍA API (Sin acciones externas)
     - name: Subir CSV al Volumen de Databricks vía API
       env:
         DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
@@ -55,3 +51,14 @@ jobs:
         curl -X PUT "${DATABRICKS_HOST}/api/2.0/fs/files/Volumes/workspace/datos_retail/raw_scraping_data/${NOMBRE_ARCHIVO}" \
         -H "Authorization: Bearer ${DATABRICKS_TOKEN}" \
         --data-binary "@${ARCHIVO_CSV}"
+
+    - name: Disparar Pipeline en Databricks
+      env:
+        DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+        DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        JOB_ID: "239273899963057"
+      run: |
+        curl -X POST "${DATABRICKS_HOST}/api/2.1/jobs/run-now" \
+        -H "Authorization: Bearer ${DATABRICKS_TOKEN}" \
+        -H "Content-Type: application/json" \
+        -d "{\"job_id\": ${JOB_ID}}"
