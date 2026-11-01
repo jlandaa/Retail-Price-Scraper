@@ -38,19 +38,27 @@ jobs:
         git commit -m "🤖 Actualización bi-semanal de precios y limpieza" || echo "No hay cambios para subir"
         git push
 
-    # ⬇️ SUBIR CSV DIRECTAMENTE VÍA API (Sin acciones externas)
-    - name: Subir CSV al Volumen de Databricks vía API
+   # ⬇️ NUEVO BLOQUE: SUBIR CSV DIRECTAMENTE VÍA API
+    - name: 📤 Subir CSV al Volumen de Databricks
       env:
         DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
         DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
       run: |
-        ARCHIVO_CSV=$(ls -t data/fravega_*.csv | head -n 1)
-        NOMBRE_ARCHIVO=$(basename "$ARCHIVO_CSV")
-        echo "Subiendo $NOMBRE_ARCHIVO al volumen de Databricks..."
+        # 1. Encontrar el archivo CSV más reciente en la carpeta data
+        FILE_PATH=$(ls data/fravega_*.csv | sort -V | tail -n 1)
+        FILE_NAME=$(basename $FILE_PATH)
         
-        curl -X PUT "${DATABRICKS_HOST}/api/2.0/fs/files/Volumes/workspace/datos_retail/raw_scraping_data/${NOMBRE_ARCHIVO}" \
-        -H "Authorization: Bearer ${DATABRICKS_TOKEN}" \
-        --data-binary "@${ARCHIVO_CSV}"
+        echo "Subiendo $FILE_NAME al Volumen de Databricks..."
+        
+        # 2. Hacer un PUT a la API de Databricks (Files API para Unity Catalog Volumes)
+        curl -X PUT \
+          "${DATABRICKS_HOST}/api/2.0/fs/files/Volumes/workspace/datos_retail/raw_scraping_data/${FILE_NAME}" \
+          -H "Authorization: Bearer ${DATABRICKS_TOKEN}" \
+          -H "Content-Type: application/octet-stream" \
+          --data-binary "@${FILE_PATH}" \
+          --fail --silent --show-error
+          
+        echo "✅ Archivo subido exitosamente."
 
     - name: Disparar Pipeline en Databricks
       env:
