@@ -38,19 +38,24 @@ jobs:
         git commit -m "🤖 Actualización bi-semanal de precios y limpieza" || echo "No hay cambios para subir"
         git push
 
-    # ⬇️ NUEVO PASO 1: Instalar la CLI de Databricks
+    # ⬇️ PASO 1: Instalar la CLI de Databricks
     - name: Instalar Databricks CLI
       uses: databricks/setup-databricks@main
 
-    # ⬇️ NUEVO PASO 2: Subir el CSV dinámico al Volumen de Databricks
-    - name: Subir CSV a Volumen de Databricks
+    # ⬇️ PASO 2: Subir el CSV dinámico al Volumen de Databricks
+    # ⬇️ Reemplazamos la instalación y subida por un comando curl directo a la API de Files
+    - name: Subir CSV al Volumen de Databricks vía API
       env:
         DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
         DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
       run: |
         ARCHIVO_CSV=$(ls -t data/fravega_*.csv | head -n 1)
-        echo "Subiendo $ARCHIVO_CSV al volumen de Databricks..."
-        databricks fs cp "$ARCHIVO_CSV" "dbfs:/Volumes/workspace/datos_retail/raw_scraping_data/"
+        NOMBRE_ARCHIVO=$(basename "$ARCHIVO_CSV")
+        echo "Subiendo $NOMBRE_ARCHIVO al volumen de Databricks..."
+        
+        curl -X PUT "${DATABRICKS_HOST}/api/2.0/fs/files/Volumes/workspace/datos_retail/raw_scraping_data/${NOMBRE_ARCHIVO}" \
+        -H "Authorization: Bearer ${DATABRICKS_TOKEN}" \
+        --data-binary "@${ARCHIVO_CSV}"
 
     - name: Disparar Pipeline en Databricks
       env:
