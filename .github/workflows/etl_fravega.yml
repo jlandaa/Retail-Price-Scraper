@@ -70,3 +70,34 @@ jobs:
         -H "Authorization: Bearer ${DATABRICKS_TOKEN}" \
         -H "Content-Type: application/json" \
         -d "{\"job_id\": ${JOB_ID}}"
+
+      # ⬇️ NUEVO BLOQUE: ACTUALIZAR POWER BI SERVICE
+    - name: 📊 Actualizar Dataset en Power BI Service
+      env:
+        TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        CLIENT_ID: ${{ secrets.POWERBI_CLIENT_ID }}
+        CLIENT_SECRET: ${{ secrets.POWERBI_CLIENT_SECRET }}
+        WORKSPACE_ID: ${{ secrets.PBI_WORKSPACE_ID }}
+        DATASET_ID: ${{ secrets.PBI_DATASET_ID }}
+      run: |
+        echo "Obteniendo Token de acceso para Power BI..."
+        
+        # 1. Obtener Token de Azure AD (Requiere un App Registration en Azure)
+        TOKEN_RESPONSE=$(curl -s -X POST "https://login.microsoftonline.com/$TENANT_ID/oauth2/v2.0/token" \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -d "client_id=$CLIENT_ID" \
+          -d "scope=https://analysis.windows.net/powerbi/api/.default" \
+          -d "client_secret=$CLIENT_SECRET" \
+          -d "grant_type=client_credentials")
+          
+        ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
+        
+        echo "Disparando actualización del Dataset en Power BI Service..."
+        
+        # 2. Enviar solicitud de Refresh a la API de Power BI
+        curl -X POST "https://api.powerbi.com/v1.0/myorg/groups/$WORKSPACE_ID/datasets/$DATASET_ID/refreshes" \
+          -H "Authorization: Bearer $ACCESS_TOKEN" \
+          -H "Content-Type: application/json" \
+          --fail --silent --show-error
+          
+        echo "✅ Señal de actualización enviada a Power BI exitosamente."
