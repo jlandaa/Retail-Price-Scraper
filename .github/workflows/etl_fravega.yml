@@ -98,6 +98,7 @@ jobs:
         curl -X POST "https://api.powerbi.com/v1.0/myorg/groups/$WORKSPACE_ID/datasets/$DATASET_ID/refreshes" \
           -H "Authorization: Bearer $ACCESS_TOKEN" \
           -H "Content-Type: application/json" \
+          -H "Content-Length: 0" \
           --fail --silent --show-error
           
         echo "✅ Señal de actualización enviada a Power BI exitosamente."
