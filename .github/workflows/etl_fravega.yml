@@ -83,35 +83,23 @@ jobs:
       run: |
         echo "Obteniendo Token de acceso para Power BI..."
         
-        # 1. Obtener Token de Azure AD protegiendo el secret con comillas
-        TOKEN_RESPONSE=$(curl -s -X POST "https://login.microsoftonline.com/$TENANT_ID/oauth2/v2.0/token" \
+        # 1. Obtener Token de Azure AD (Requiere un App Registration en Azure)
+        TOKEN_RESPONSE=$(curl -s -X POST "https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token" \
           -H "Content-Type: application/x-www-form-urlencoded" \
-          --data-urlencode "client_id=$CLIENT_ID" \
-          --data-urlencode "scope=https://analysis.windows.net/powerbi/api/.default" \
-          --data-urlencode "client_secret=$CLIENT_SECRET" \
-          --data-urlencode "grant_type=client_credentials")
+          -d "client_id=${CLIENT_ID}" \
+          -d "scope=https://analysis.windows.net/powerbi/api/.default" \
+          -d "client_secret=${CLIENT_SECRET}" \
+          -d "grant_type=client_credentials")
           
-        ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
+        ACCESS_TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.access_token')
         
-        if [ "$ACCESS_TOKEN" = "null" ] || [ -z "$ACCESS_TOKEN" ]; then
-          echo "❌ Error al obtener el token:"
-          echo "$TOKEN_RESPONSE"
-          exit 1
-        fi
-        
-        echo "Token obtenido correctamente. Disparando actualización..."
+        echo "Disparando actualización del Dataset en Power BI Service..."
         
         # 2. Enviar solicitud de Refresh a la API de Power BI
-        HTTP_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "https://api.powerbi.com/v1.0/$TENANT_ID/groups/$WORKSPACE_ID/datasets/$DATASET_ID/refreshes" \
-          -H "Authorization: Bearer $ACCESS_TOKEN" \
+        curl -X POST "https://api.powerbi.com/v1.0/${TENANT_ID}/groups/${WORKSPACE_ID}/datasets/${DATASET_ID}/refreshes" \
+          -H "Authorization: Bearer ${ACCESS_TOKEN}" \
           -H "Content-Type: application/json" \
-          -H "Content-Length: 0")
+          -H "Content-Length: 0" \
+          --fail --silent --show-error
           
-        echo "Código HTTP recibido de Power BI: $HTTP_RESPONSE"
-        
-        if [ "$HTTP_RESPONSE" -eq 202 ] || [ "$HTTP_RESPONSE" -eq 200 ]; then
-          echo "✅ ¡Actualización disparada exitosamente!"
-        else
-          echo "❌ Error: La API respondió con el código HTTP $HTTP_RESPONSE"
-          exit 1
-        fi
+        echo "✅ Señal de actualización enviada a Power BI exitosamente."
