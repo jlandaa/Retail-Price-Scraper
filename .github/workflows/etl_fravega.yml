@@ -96,7 +96,7 @@ jobs:
         echo "Disparando actualización del Dataset en Power BI Service..."
         
         # 2. Enviar solicitud de Refresh a la API de Power BI
-        curl -X POST "https://api.powerbi.com/v1.0/$TENANT_ID/groups/$WORKSPACE_ID/datasets/$DATASET_ID/refreshes" \
+        curl -X POST "https://api.powerbi.com/v1.0/$TENANT_ID/groups/$PBI_WORKSPACE_ID/datasets/$PBI_DATASET_ID/refreshes" \
           -H "Authorization: Bearer $ACCESS_TOKEN" \
           -H "Content-Type: application/json" \
           -H "Content-Length: 0" \
