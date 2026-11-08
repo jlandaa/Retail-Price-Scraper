@@ -19,19 +19,20 @@ En la industria del retail, la agilidad para ajustar precios frente a la compete
 - **Detectar oportunidades de margen** mediante el análisis de dispersión entre el precio regular y el precio de oferta.
 
 ## 🏗️ Arquitectura de Datos (End-to-End)
-El flujo de datos sigue las mejores prácticas de automatización y escalabilidad en la nube:
+El flujo de datos sigue las mejores prácticas de automatización, orquestación por APIs y escalabilidad en la nube:
 
-1. **Orquestación (CI/CD):** **GitHub Actions** dispara el pipeline automáticamente de forma bi-semanal mediante *Cron Jobs*, eliminando la necesidad de intervención manual.
-2. **Ingesta (Web Scraping):** Scripts en Python utilizando `ScraperAPI` con manejo de excepciones, sistema de reintentos (*retries*) y rotación de proxies para garantizar la robustez de la captura.
-3. **Procesamiento Distribuido (ETL):** **Databricks** y **PySpark** gestionan la limpieza de strings, casteo estricto de tipos de datos y aplicación de lógica de negocio.
+1. **Orquestación (CI/CD):** **GitHub Actions** dispara el pipeline automáticamente de forma bi-semanal mediante *Cron Jobs*, eliminando la necesidad de intervención manual y coordinando todo el ecosistema.
+2. **Ingesta Directa (Web Scraping):** Scripts en Python utilizando `ScraperAPI` con manejo de excepciones, sistema de reintentos (*retries*) y rotación de proxies. Los archivos crudos se suben directamente al Volumen de Databricks mediante su Files API REST.
+3. **Procesamiento Distribuido (ETL):** GitHub Actions invoca la API de Jobs de **Databricks**. PySpark gestiona la limpieza de strings, casteo estricto de tipos de datos y aplicación de lógica de negocio.
 4. **Almacenamiento (Delta Lake):** Modelado dimensional optimizado bajo un **Esquema Estrella**, generando Claves Subrogadas (*Surrogate Keys*) numéricas (`id_producto`) para máxima performance.
-5. **Capa Semántica y Visualización (BI):** Power BI conectado al modelo Delta para análisis interactivo y data storytelling orientado a nivel ejecutivo.
+5. **Capa Semántica y Actualización Automática (BI):** Como paso final del pipeline, se invoca la API REST de Power BI Service para refrescar el modelo semántico, garantizando que el dashboard interactivo consuma la última data sin intervención.
 
 ## ⚙️ Características Técnicas Destacadas
+* **Integración CI/CD y Orquestación por APIs:** Flujo 100% automatizado conectando GitHub Actions, Databricks y Power BI en un solo circuito continuo.
 * **Performance Optimizada:** Implementación de un modelo de datos en estrella (Star Schema) en Databricks, reemplazando cadenas de texto largas por identificadores numéricos únicos (`id_producto`) para cruzar hechos y dimensiones con máxima velocidad.
 * **Código Limpio y Modular:** Lógica de extracción separada por categorías estratégicas y diccionarios de marcas.
+* **Manejo de Historial:** Política de retención de datos que incluye rutinas automáticas de limpieza para archivos en crudo mayores a 30 días[cite: 5], sumado a la partición de tablas temporales para análisis evolutivo.
 * **Data Storytelling:** Diseño de dashboard en Power BI optimizado para lectura rápida de KPIs, análisis de dispersión de precios y detección de outliers.
-* **Manejo de Historial:** Política de retención de datos y partición de tablas temporales para análisis evolutivo.
 
 ## 📂 Estructura del Repositorio
 ```text
