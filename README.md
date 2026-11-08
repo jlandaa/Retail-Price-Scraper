@@ -31,7 +31,7 @@ El flujo de datos sigue las mejores prácticas de automatización, orquestación
 * **Integración CI/CD y Orquestación por APIs:** Flujo 100% automatizado conectando GitHub Actions, Databricks y Power BI en un solo circuito continuo.
 * **Performance Optimizada:** Implementación de un modelo de datos en estrella (Star Schema) en Databricks, reemplazando cadenas de texto largas por identificadores numéricos únicos (`id_producto`) para cruzar hechos y dimensiones con máxima velocidad.
 * **Código Limpio y Modular:** Lógica de extracción separada por categorías estratégicas y diccionarios de marcas.
-* **Manejo de Historial:** Política de retención de datos que incluye rutinas automáticas de limpieza para archivos en crudo mayores a 30 días[cite: 5], sumado a la partición de tablas temporales para análisis evolutivo.
+* **Manejo de Historial:** Política de retención de datos que incluye rutinas automáticas de limpieza para archivos en crudo mayores a 30 días, sumado a la partición de tablas temporales para análisis evolutivo.
 * **Data Storytelling:** Diseño de dashboard en Power BI optimizado para lectura rápida de KPIs, análisis de dispersión de precios y detección de outliers.
 
 ## 📂 Estructura del Repositorio
