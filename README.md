@@ -9,7 +9,7 @@
 ## 📌 Visión General del Proyecto
 Este proyecto es una solución integral de Business Intelligence y Data Engineering diseñada para monitorear la competitividad diaria en el sector retail. A través de un pipeline 100% automatizado, se extraen precios, stock y descuentos del e-commerce de **Frávega** (categorías de tecnología y electrodomésticos). Los datos se procesan mediante computación distribuida y se disponibilizan en un modelo semántico para análisis estratégico.
 
-🔗 **[Ver Dashboard Interactivo (Publicado en Power BI)](https://app.powerbi.com/view?r=eyJrIjoiNjljMGY0NDUtYjBjMC00ODkxLWFjYWYtNzU3ZDkxN2QwOWE3IiwidCI6IjZjYmMyOTllLWIxZDUtNDJjZi1hMWRjLTgwNjZmMTdiN2QwNyIsImMiOjR9)**
+🔗 **[Ver Dashboard Interactivo (Publicado en Power BI)](https://app.powerbi.com/view?r=eyJrIjoiYzFhNWJmMzQtNTllYS00ODNkLTlkOTYtMDQyNmMzNzRiYjQ4IiwidCI6IjZjYmMyOTllLWIxZDUtNDJjZi1hMWRjLTgwNjZmMTdiN2QwNyIsImMiOjR9)**
 
 
 ## 💼 Impacto de Negocio
