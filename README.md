@@ -7,10 +7,9 @@
 [![Power BI](https://img.shields.io/badge/Power_BI-F2C811?style=for-the-badge&logo=powerbi&logoColor=black)](https://powerbi.microsoft.com/)
 
 ## 📌 Visión General del Proyecto
-Este proyecto es una solución integral de Business Intelligence y Data Engineering diseñada para monitorear la competitividad diaria en el sector retail. A través de un pipeline 100% automatizado, se extraen precios, stock y descuentos del e-commerce de **Frávega** (categorías de tecnología y electrodomésticos). Los datos se procesan mediante computación distribuida y se disponibilizan en un modelo semántico para análisis estratégico.
+Este proyecto es una solución integral de Business Intelligence y Data Engineering diseñada para monitorear la competitividad periódica en el sector retail. A través de un pipeline 100% automatizado, se extraen precios, stock y descuentos del e-commerce de **Frávega** (categorías de tecnología y electrodomésticos). Los datos se procesan mediante computación distribuida y se disponibilizan en un modelo semántico para análisis estratégico.
 
 🔗 **[Ver Dashboard Interactivo (Publicado en Power BI)](https://app.powerbi.com/view?r=eyJrIjoiYzFhNWJmMzQtNTllYS00ODNkLTlkOTYtMDQyNmMzNzRiYjQ4IiwidCI6IjZjYmMyOTllLWIxZDUtNDJjZi1hMWRjLTgwNjZmMTdiN2QwNyIsImMiOjR9)**
-
 
 ## 💼 Impacto de Negocio
 En la industria del retail, la agilidad para ajustar precios frente a la competencia define la cuota de mercado. Esta arquitectura permite a los equipos de Pricing y Comercial:
@@ -23,9 +22,9 @@ El flujo de datos sigue las mejores prácticas de automatización, orquestación
 
 1. **Orquestación (CI/CD):** **GitHub Actions** dispara el pipeline automáticamente de forma bi-semanal mediante *Cron Jobs*, eliminando la necesidad de intervención manual y coordinando todo el ecosistema.
 2. **Ingesta Directa (Web Scraping):** Scripts en Python utilizando `ScraperAPI` con manejo de excepciones, sistema de reintentos (*retries*) y rotación de proxies. Los archivos crudos se suben directamente al Volumen de Databricks mediante su Files API REST.
-3. **Procesamiento Distribuido (ETL):** GitHub Actions invoca la API de Jobs de **Databricks**. PySpark gestiona la limpieza de strings, casteo estricto de tipos de datos y aplicación de lógica de negocio.
+3. **Procesamiento Distribuido (ETL):** GitHub Actions invoca la API de Jobs de **Databricks** y monitorea activamente el ciclo de vida de la ejecución (*polling* del `run_id`) hasta confirmar su finalización exitosa. PySpark gestiona la limpieza de strings, casteo estricto de tipos de datos y aplicación de lógica de negocio.
 4. **Almacenamiento (Delta Lake):** Modelado dimensional optimizado bajo un **Esquema Estrella**, generando Claves Subrogadas (*Surrogate Keys*) numéricas (`id_producto`) para máxima performance.
-5. **Capa Semántica y Actualización Automática (BI):** Como paso final del pipeline, se invoca la API REST de Power BI Service para refrescar el modelo semántico, garantizando que el dashboard interactivo consuma la última data sin intervención.
+5. **Capa Semántica y Actualización Automática (BI):** Una vez completado el Job en Databricks, el pipeline se autentica mediante **Azure AD (Service Principal)** e invoca la API REST de **Power BI Service** para refrescar el modelo semántico en modo *Import*, garantizando alta disponibilidad 24/7 y consultas instantáneas sin depender del cómputo activo del clúster.
 
 ## ⚙️ Características Técnicas Destacadas
 * **Integración CI/CD y Orquestación por APIs:** Flujo 100% automatizado conectando GitHub Actions, Databricks y Power BI en un solo circuito continuo.
@@ -37,20 +36,22 @@ El flujo de datos sigue las mejores prácticas de automatización, orquestación
 ## 📂 Estructura del Repositorio
 ```text
 📦 Retail-Price-Scraper
- ┣ 📂 .github/workflows/    # Orquestación CI/CD (GitHub Actions)
- ┣ 📂 scraper/              # Módulo de ingesta en Python
- ┃ ┗ 📜 Fravega_Completo.py # Lógica core de web scraping
- ┣ 📂 notebooks/            # Procesamiento distribuido
- ┃ ┗ 📜 Scraping_Retail.ipynb # Transformaciones ETL en PySpark / SQL
- ┣ 📂 dashboard/            # Capa de visualización
- ┃ ┗ 📜 Dashboard_Fravega.pbix
- ┣ 📜 requirements.txt      # Dependencias del entorno de ingesta
- ┗ 📜 README.md             # Documentación técnica
+ ┣ 📂 .github/workflows/       # Orquestación CI/CD (GitHub Actions)
+ ┃ ┗ 📜 etl_fravega.yml        # Pipeline automatizado End-to-End
+ ┣ 📂 data/                    # Almacenamiento histórico local (ventana móvil de 30 días)
+ ┣ 📂 scraper/                 # Módulo de ingesta en Python
+ ┃ ┗ 📜 Fravega_Completo.py    # Lógica core de web scraping
+ ┣ 📂 notebooks/               # Procesamiento distribuido
+ ┃ ┗ 📜 Scraping_Retail.ipynb  # Transformaciones ETL en PySpark / SQL
+ ┣ 📂 dashboard/               # Capa de visualización
+ ┃ ┗ 📜 Scraping_retail.pbix   # Modelo semántico y reporte en Power BI
+ ┣ 📜 requirements.txt         # Dependencias del entorno de ingesta
+ ┗ 📜 README.md                # Documentación técnica
 ```
 
 ## 🚀 Despliegue y Ejecución
 ### Opción A: Pipeline Automatizado (Producción)
-El proyecto está desplegado en producción. El flujo de trabajo .github/workflows/etl_fravega.yml se ejecuta automáticamente mediante un cron schedule. Los logs de ingesta pueden auditarse directamente en la pestaña Actions del repositorio.
+El proyecto está desplegado en producción. El flujo de trabajo `.github/workflows/etl_fravega.yml` se ejecuta automáticamente mediante un cron schedule. Los logs de ingesta pueden auditarse directamente en la pestaña Actions del repositorio.
 
 ### Opción B: Ejecución Local (Desarrollo)
 Para replicar el entorno de ingesta en local:
