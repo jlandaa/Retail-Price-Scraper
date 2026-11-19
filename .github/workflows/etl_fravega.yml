@@ -2,8 +2,8 @@ name: ETL Frávega (Bi-Weekly)
 
 on:
   schedule:
-    # Se ejecuta a las 9:00 AM UTC (6:00 AM Arg) los LUNES (1) y JUEVES (4)
-    - cron: '0 9 * * 1,4'
+    # Se ejecuta a las 9:23 AM UTC (6:23 AM Arg) los LUNES (1) y JUEVES (4), fuera del pico en punto
+    - cron: '23 9 * * 1,4'
   workflow_dispatch:
 
 jobs:
@@ -11,136 +11,163 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Descargar el repositorio
-      uses: actions/checkout@v4
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
 
-    - name: Instalar Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.13'
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
 
-    - name: Instalar librerías
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Instalar librerías
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    # --- INICIO BLOQUE COMENTADO (NO GASTA CRÉDITOS) ---
-    # - name: Correr el Scraper
-    #   env:
-    #     SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
-    #   run: python scraper/Fravega_Completo.py
-    #
-    # - name: Guardar los datos en el repositorio
-    #   run: |
-    #     git config --global user.name 'GitHub Actions Bot'
-    #     git config --global user.email 'actions@github.com'
-    #     git pull origin main --rebase
-    #     git add .
-    #     git commit -m "🤖 Actualización bi-semanal de precios y limpieza" || echo "No hay cambios para subir"
-    #     git push
-    # --- FIN BLOQUE COMENTADO ---
+      # --- INICIO BLOQUE COMENTADO (NO GASTA CRÉDITOS) ---
+      # - name: Correr el Scraper
+      #   env:
+      #     SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
+      #   run: python scraper/Fravega_Completo.py
+      #
+      # - name: Guardar los datos en el repositorio
+      #   run: |
+      #     git config --global user.name 'GitHub Actions Bot'
+      #     git config --global user.email 'actions@github.com'
+      #     git pull origin main --rebase
+      #     git add .
+      #     git commit -m "🤖 Actualización bi-semanal de precios y limpieza" || echo "No hay cambios para subir"
+      #     git push
+      # --- FIN BLOQUE COMENTADO ---
 
-    # ⬇️ NUEVO BLOQUE: SUBIR CSV DIRECTAMENTE VÍA API
-    - name: 📤 Subir CSV al Volumen de Databricks
-      env:
-        DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-        DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-      run: |
-        # 1. Encontrar el archivo CSV más reciente en la carpeta data
-        FILE_PATH=$(ls data/fravega_*.csv | sort -V | tail -n 1)
-        FILE_NAME=$(basename "$FILE_PATH")
-        
-        echo "Subiendo $FILE_NAME al Volumen de Databricks..."
-        
-        # 2. Hacer un PUT a la API de Databricks (Files API para Unity Catalog Volumes)
-        curl -X PUT \
-          "${DATABRICKS_HOST}/api/2.0/fs/files/Volumes/workspace/datos_retail/raw_scraping_data/${FILE_NAME}" \
-          -H "Authorization: Bearer ${DATABRICKS_TOKEN}" \
-          -H "Content-Type: application/octet-stream" \
-          --data-binary "@${FILE_PATH}" \
-          --fail --silent --show-error
-          
-        echo "✅ Archivo subido exitosamente."
+      # ⬇️ SUBIR CSV DIRECTAMENTE VÍA API
+      - name: 📤 Subir CSV al Volumen de Databricks
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          # 1. Encontrar el archivo CSV más reciente en la carpeta data
+          FILE_PATH=$(ls data/fravega_*.csv | sort -V | tail -n 1)
+          FILE_NAME=$(basename "$FILE_PATH")
 
-    - name: Disparar Pipeline en Databricks y esperar finalización
-      env:
-        DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-        DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-        JOB_ID: "239273899963057"
-      run: |
-        # 1. Disparar el Job y capturar el run_id
-        RESPONSE=$(curl -s -S -X POST "${DATABRICKS_HOST}/api/2.1/jobs/run-now" \
-          -H "Authorization: Bearer ${DATABRICKS_TOKEN}" \
-          -H "Content-Type: application/json" \
-          -d "{\"job_id\": ${JOB_ID}}")
-        
-        echo "Respuesta inicial: $RESPONSE"
-        RUN_ID=$(echo "$RESPONSE" | jq -r '.run_id')
+          echo "Subiendo $FILE_NAME al Volumen de Databricks..."
 
-        if [ "$RUN_ID" == "null" ] || [ -z "$RUN_ID" ]; then
-          echo "❌ Error: No se pudo iniciar el Job en Databricks."
-          exit 1
-        fi
+          # 2. Hacer un PUT a la API de Databricks (Files API para Unity Catalog Volumes)
+          curl -X PUT \
+            "${DATABRICKS_HOST}/api/2.0/fs/files/Volumes/workspace/datos_retail/raw_scraping_data/${FILE_NAME}" \
+            -H "Authorization: Bearer ${DATABRICKS_TOKEN}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@${FILE_PATH}" \
+            --fail --silent --show-error
 
-        echo "✅ Job iniciado con run_id: $RUN_ID. Monitoreando ejecución..."
+          echo "✅ Archivo subido exitosamente."
 
-        # 2. Consultar el estado cada 15 segundos (máximo 20 intentos = 5 minutos)
-        for i in {1..20}; do
-          STATUS_RESPONSE=$(curl -s -S -X GET "${DATABRICKS_HOST}/api/2.1/jobs/runs/get?run_id=${RUN_ID}" \
-            -H "Authorization: Bearer ${DATABRICKS_TOKEN}")
-          
-          LIFE_CYCLE=$(echo "$STATUS_RESPONSE" | jq -r '.state.life_cycle_state')
-          RESULT_STATE=$(echo "$STATUS_RESPONSE" | jq -r '.state.result_state')
-          
-          echo "Intento $i: Estado actual = $LIFE_CYCLE"
+      - name: Disparar Pipeline en Databricks y esperar finalización
+        id: databricks
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          JOB_ID: "239273899963057"
+        run: |
+          RUN_ID=""
+          ERROR_CODE=""
 
-          if [ "$LIFE_CYCLE" == "TERMINATED" ]; then
-            if [ "$RESULT_STATE" == "SUCCESS" ]; then
-              echo "🎉 El Job en Databricks finalizó exitosamente."
+          # 1. Intentar disparar el Job (hasta 4 intentos espaciados ante bloqueos temporales)
+          for attempt in 1 2 3 4; do
+            RESPONSE=$(curl -s -S -X POST "${DATABRICKS_HOST}/api/2.1/jobs/run-now" \
+              -H "Authorization: Bearer ${DATABRICKS_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"job_id\": ${JOB_ID}}")
+
+            echo "Intento de inicio $attempt - Respuesta: $RESPONSE"
+            RUN_ID=$(echo "$RESPONSE" | jq -r '.run_id // empty')
+            ERROR_CODE=$(echo "$RESPONSE" | jq -r '.error_code // empty')
+
+            if [ -n "$RUN_ID" ]; then
+              break
+            fi
+
+            if [ "$ERROR_CODE" == "FEATURE_DISABLED" ] && [ "$attempt" -lt 4 ]; then
+              echo "⏳ Databricks devolvió FEATURE_DISABLED. Reintentando en 60 segundos..."
+              sleep 60
+            else
+              break
+            fi
+          done
+
+          # 2. Manejo controlado si Databricks Free Edition mantiene el bloqueo temporal
+          if [ -z "$RUN_ID" ]; then
+            if [ "$ERROR_CODE" == "FEATURE_DISABLED" ]; then
+              echo "::warning::Databricks Free Edition pausó temporalmente el inicio de Jobs por API (FEATURE_DISABLED). El CSV quedó subido al Volumen; se omite el refresh de Power BI."
+              echo "databricks_ok=false" >> "$GITHUB_OUTPUT"
               exit 0
             else
-              echo "❌ El Job terminó con fallo: $RESULT_STATE"
+              echo "❌ Error real al iniciar el Job en Databricks ($ERROR_CODE)."
               exit 1
             fi
-          elif [ "$LIFE_CYCLE" == "INTERNAL_ERROR" ] || [ "$LIFE_CYCLE" == "SKIPPED" ]; then
-            echo "❌ Error crítico en la ejecución del Job: $LIFE_CYCLE"
-            exit 1
           fi
 
-          sleep 15
-        done
+          echo "✅ Job iniciado con run_id: $RUN_ID. Monitoreando ejecución..."
 
-        echo "⚠️ Tiempo de espera agotado (5 minutos)."
-        exit 1
+          # 3. Consultar el estado cada 15 segundos (máximo 20 intentos = 5 minutos)
+          for i in {1..20}; do
+            STATUS_RESPONSE=$(curl -s -S -X GET "${DATABRICKS_HOST}/api/2.1/jobs/runs/get?run_id=${RUN_ID}" \
+              -H "Authorization: Bearer ${DATABRICKS_TOKEN}")
 
-    # ⬇️ NUEVO BLOQUE: ACTUALIZAR POWER BI SERVICE
-    - name: 📊 Actualizar Dataset en Power BI Service
-      env:
-        TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-        CLIENT_ID: ${{ secrets.POWERBI_CLIENT_ID }}
-        CLIENT_SECRET: ${{ secrets.POWERBI_CLIENT_SECRET }}
-        WORKSPACE_ID: ${{ secrets.PBI_WORKSPACE_ID }}
-        DATASET_ID: ${{ secrets.PBI_DATASET_ID }}
-      run: |
-        echo "Obteniendo Token de acceso para Power BI..."
-        
-        # 1. Obtener Token de Azure AD (Requiere un App Registration en Azure)
-        TOKEN_RESPONSE=$(curl -s -X POST "https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token" \
-          -H "Content-Type: application/x-www-form-urlencoded" \
-          -d "client_id=${CLIENT_ID}" \
-          -d "scope=https://analysis.windows.net/powerbi/api/.default" \
-          -d "client_secret=${CLIENT_SECRET}" \
-          -d "grant_type=client_credentials")
-          
-        ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
-        
-        echo "Disparando actualización del Dataset en Power BI Service..."
-        
-        # 2. Enviar solicitud de Refresh a la API de Power BI
-        curl -X POST "https://api.powerbi.com/v1.0/${TENANT_ID}/groups/${WORKSPACE_ID}/datasets/${DATASET_ID}/refreshes" \
-          -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-          -H "Content-Type: application/json" \
-          -H "Content-Length: 0" \
-          --fail --silent --show-error
-          
-        echo "✅ Señal de actualización enviada a Power BI exitosamente."
+            LIFE_CYCLE=$(echo "$STATUS_RESPONSE" | jq -r '.state.life_cycle_state')
+            RESULT_STATE=$(echo "$STATUS_RESPONSE" | jq -r '.state.result_state')
+
+            echo "Intento $i: Estado actual = $LIFE_CYCLE"
+
+            if [ "$LIFE_CYCLE" == "TERMINATED" ]; then
+              if [ "$RESULT_STATE" == "SUCCESS" ]; then
+                echo "🎉 El Job en Databricks finalizó exitosamente."
+                echo "databricks_ok=true" >> "$GITHUB_OUTPUT"
+                exit 0
+              else
+                echo "❌ El Job terminó con fallo: $RESULT_STATE"
+                exit 1
+              fi
+            elif [ "$LIFE_CYCLE" == "INTERNAL_ERROR" ] || [ "$LIFE_CYCLE" == "SKIPPED" ]; then
+              echo "❌ Error crítico en la ejecución del Job: $LIFE_CYCLE"
+              exit 1
+            fi
+
+            sleep 15
+          done
+
+          echo "⚠️ Tiempo de espera agotado (5 minutos)."
+          exit 1
+
+      # ⬇️ ACTUALIZAR POWER BI SERVICE (SOLO SI DATABRICKS CORRIÓ OK)
+      - name: 📊 Actualizar Dataset en Power BI Service
+        if: steps.databricks.outputs.databricks_ok == 'true'
+        env:
+          TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          CLIENT_ID: ${{ secrets.POWERBI_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.POWERBI_CLIENT_SECRET }}
+          WORKSPACE_ID: ${{ secrets.PBI_WORKSPACE_ID }}
+          DATASET_ID: ${{ secrets.PBI_DATASET_ID }}
+        run: |
+          echo "Obteniendo Token de acceso para Power BI..."
+
+          # 1. Obtener Token de Azure AD (Requiere un App Registration en Azure)
+          TOKEN_RESPONSE=$(curl -s -X POST "https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "client_id=${CLIENT_ID}" \
+            -d "scope=https://analysis.windows.net/powerbi/api/.default" \
+            -d "client_secret=${CLIENT_SECRET}" \
+            -d "grant_type=client_credentials")
+
+          ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
+
+          echo "Disparando actualización del Dataset en Power BI Service..."
+
+          # 2. Enviar solicitud de Refresh a la API de Power BI
+          curl -X POST "https://api.powerbi.com/v1.0/${TENANT_ID}/groups/${WORKSPACE_ID}/datasets/${DATASET_ID}/refreshes" \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -H "Content-Length: 0" \
+            --fail --silent --show-error
+
+          echo "✅ Señal de actualización enviada a Power BI exitosamente."
