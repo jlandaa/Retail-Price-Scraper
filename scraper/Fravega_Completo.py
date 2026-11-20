@@ -127,11 +127,14 @@ MARCAS_CONOCIDAS = [
     "MACLAREN",
 ]
 
+PATRON_BLACK_DECKER = re.compile(r"(?<!\w)BLACK[+\s&-]+DECKER(?!\w)", re.IGNORECASE)
+
 PATRONES_MARCAS = [
     (marca, re.compile(rf"(?<!\w){re.escape(marca)}(?!\w)", re.IGNORECASE))
     for marca in MARCAS_CONOCIDAS
-    if marca != "GAMA"
+    if marca not in {"GAMA", "BLACK+DECKER"}
 ]
+PATRONES_MARCAS.append(("BLACK+DECKER", PATRON_BLACK_DECKER))
 
 # Reglas específicas para GA.MA / Gama (evita confundir con "alta gama", "media gama", etc.)
 PATRON_GAMA_EXPLICITO = re.compile(r"(?<!\w)GA[\.\s]MA(?!\w)", re.IGNORECASE)
@@ -189,7 +192,7 @@ def extraer_cuotas(texto_cuotas: str | None) -> int:
 
 
 def parsear_precios(textos_precios: list[str]) -> tuple[float, float, bool]:
-    """Parsea precios en formato argentino y filtra impuestos, cuotas, envíos y ahorros."""
+    """Parsea precios en formato argentino y filtra impuestos, cuotas, envíos, ahorros y ceros."""
     valores: list[float] = []
 
     for texto in textos_precios:
@@ -201,7 +204,9 @@ def parsear_precios(textos_precios: list[str]) -> tuple[float, float, bool]:
         if match:
             num_str = match.group(1).replace(".", "").replace(",", ".")
             try:
-                valores.append(float(num_str))
+                valor = float(num_str)
+                if valor > 0:
+                    valores.append(valor)
             except ValueError:
                 continue
 
@@ -431,7 +436,7 @@ def extraer_fravega_robusto(max_paginas: int = 5) -> None:
         logger.error("No se obtuvieron datos en ninguna categoría.")
         sys.exit(1)
 
-    df = pd.DataFrame(datos_totales).drop_duplicates(subset=["sku_original", "categoria"])
+    df = pd.DataFrame(datos_totales).drop_duplicates(subset=["sku_original"])
 
     # Data Quality Gate antes de escribir el CSV
     es_valido, errores_calidad = validar_calidad_datos(
