@@ -1,0 +1,17 @@
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+exclude = ["notebooks", "data", "dashboard", ".venv", "venv"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # Errores de estilo PEP 8 (pycodestyle)
+    "F",   # Errores lógicos e imports sin usar (pyflakes)
+    "I",   # Orden alfabético y agrupación de imports (isort)
+    "UP",  # Sintaxis moderna de Python 3.13 (pyupgrade)
+    "B",   # Bugs sutiles comunes (flake8-bugbear)
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
