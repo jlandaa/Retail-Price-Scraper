@@ -37,15 +37,20 @@ El flujo de datos sigue las mejores prácticas de automatización, orquestación
 ```text
 📦 Retail-Price-Scraper
  ┣ 📂 .github/workflows/       # Orquestación CI/CD (GitHub Actions)
+ ┃ ┣ 📜 ci.yml                 # CI de calidad (Ruff + Pytest) en cada push/PR
  ┃ ┗ 📜 etl_fravega.yml        # Pipeline automatizado End-to-End
  ┣ 📂 data/                    # Almacenamiento histórico local (ventana móvil de 30 días)
  ┣ 📂 scraper/                 # Módulo de ingesta en Python
- ┃ ┗ 📜 Fravega_Completo.py    # Lógica core de web scraping
+ ┃ ┗ 📜 Fravega_Completo.py    # Scraper modular con Data Quality Gate
+ ┣ 📂 tests/                   # Pruebas unitarias en memoria
+ ┃ ┗ 📜 test_scraper.py        # Suite de tests (parseo, marcas, calidad y retención)
  ┣ 📂 notebooks/               # Procesamiento distribuido
  ┃ ┗ 📜 Scraping_Retail.ipynb  # Transformaciones ETL en PySpark / SQL
  ┣ 📂 dashboard/               # Capa de visualización
  ┃ ┗ 📜 Scraping_retail.pbix   # Modelo semántico y reporte en Power BI
+ ┣ 📜 pyproject.toml           # Configuración de Ruff y Pytest
  ┣ 📜 requirements.txt         # Dependencias del entorno de ingesta
+ ┣ 📜 .gitignore               # Exclusión de cachés y entornos locales
  ┗ 📜 README.md                # Documentación técnica
 ```
 
