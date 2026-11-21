@@ -1,0 +1,14 @@
+# Cachés de Python, Pytest y Ruff
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Entornos virtuales y variables de entorno locales
+.venv/
+venv/
+.env
+
+# Archivos temporales del sistema y editores
+.DS_Store
+Thumbs.db
