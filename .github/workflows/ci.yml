@@ -3,6 +3,11 @@ name: CI Quality (Ruff & Pytest)
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "data/**"
+      - "dashboard/**"
+      - "notebooks/**"
+      - "README.md"
   pull_request:
     branches: [main]
   workflow_dispatch:
